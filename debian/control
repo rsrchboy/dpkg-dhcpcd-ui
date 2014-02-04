@@ -1,0 +1,15 @@
+Source: dhcpcd-ui
+Section: net
+Priority: optional
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Roy Marples <roy@marples.name>
+Build-Depends: debhelper (>= 7.0.50~), libgtk2.0-dev, libnotify-dev, libdbus-1-dev
+Standards-Version: 3.9.3
+Homepage: http://roy.marples.name/projects/dhcpcd-ui
+
+Package: dhcpcd-gtk
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, dhcpcd-dbus
+Description: GTK+ frontend for dhcpcd and wpa_supplicant
+ dhcpcd-gtk sits in the notification area and notifies you of changes to your
+ IPv4 network configuration from dhcpcd and wpa_supplicant.

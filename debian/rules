@@ -1,0 +1,10 @@
+#!/usr/bin/make -f
+
+# There is no test target as such, but the build system does not know this.
+override_dh_auto_test:
+
+%:
+	dh  $@
+
+override_dh_auto_clean:
+	[ ! -f config.mk ] || dh_auto_clean

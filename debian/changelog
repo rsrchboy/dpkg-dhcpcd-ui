@@ -1,0 +1,27 @@
+dhcpcd-ui (0.6.0-1ubuntu1) trusty; urgency=medium
+
+  * Don't run dh_auto_clean unless config.mk exists, fixes FTBFS:
+    make[1]: *** No rule to make target `config.mk'.  Stop.
+    (Closes: #724218)
+
+ -- Andreas Moog <andreas.moog@warperbbs.de>  Tue, 04 Feb 2014 20:42:39 +0100
+
+dhcpcd-ui (0.6.0-1) unstable; urgency=low
+
+  * New upstream release
+  * Depend on libdbus-1-dev (closes: #666378)
+  * Updated Standards-Version to 3.9.3 (no changes needed)
+
+ -- Roy Marples <roy@marples.name>  Fri, 06 Apr 2012 11:56:27 +0100
+
+dhcpcd-ui (0.5.2-1) unstable; urgency=low
+
+  * Fix compile against libnotify-0.7.x (closes: #630264)
+
+ -- Roy Marples <roy@marples.name>  Mon, 13 Jun 2011 11:01:52 +0100
+
+dhcpcd-ui (0.5.1-1) unstable; urgency=low
+
+  * Initial upload to Debian (closes: #595089)
+
+ -- Roy Marples <roy@marples.name>  Thu, 16 Sep 2010 10:37:38 +0100
