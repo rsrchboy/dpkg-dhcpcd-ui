@@ -1,3 +1,9 @@
+dhcpcd-ui (0.7.2-1~14.04~ppa1) trusty; urgency=medium
+
+  * Build for trusty.
+
+ -- Chris Weyl <cweyl@alumni.drew.edu>  Fri, 03 Oct 2014 19:43:34 -0700
+
 dhcpcd-ui (0.7.2-1) UNRELEASED; urgency=medium
 
   * Imported Upstream version 0.7.2
