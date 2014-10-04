@@ -1,13 +1,13 @@
 PROG=		dhcpcd-ui
-VERSION=	0.6.0
+VERSION=	0.7.2
+
+TOPDIR=		.
+include ${TOPDIR}/iconfig.mk
+include ${MKDIR}/subdir.mk
 
 .PHONY:		icons
 
-SUBDIR=		src icons
-
-TOPDIR=		.
-include ${TOPDIR}/config.mk
-include ${MKDIR}/subdir.mk
+SUBDIR=		src ${MKICONS}
 
 GITREF?=	HEAD
 DISTPREFIX?=	${PROG}-${VERSION}
@@ -24,7 +24,8 @@ SNAPFILE=	${SNAPDIR}.tar.bz2
 dist:
 	mkdir /tmp/${DISTPREFIX}
 	cp -RPp * /tmp/${DISTPREFIX}
-	(cd /tmp/${DISTPREFIX}; make clean icons; rm config.h config.mk)
+	(cd /tmp/${DISTPREFIX}; \
+		./configure; make clean icons; rm config.h config.mk)
 	find /tmp/${DISTPREFIX} -name .gitignore -delete
 	tar -cvjpf ${DISTFILE} -C /tmp ${DISTPREFIX}
 	rm -rf /tmp/${DISTPREFIX}

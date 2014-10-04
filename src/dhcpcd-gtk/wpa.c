@@ -1,6 +1,6 @@
 /*
  * dhcpcd-gtk
- * Copyright 2009 Roy Marples <roy@marples.name>
+ * Copyright 2009-2014 Roy Marples <roy@marples.name>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,6 +24,8 @@
  * SUCH DAMAGE.
  */
 
+#include <errno.h>
+
 #include "dhcpcd-gtk.h"
 
 static void
@@ -38,55 +40,6 @@ wpa_dialog(const char *title, const char *txt)
 	gtk_widget_destroy(dialog);
 }
 
-static bool
-configure_network(DHCPCD_CONNECTION *con, DHCPCD_IF *i,
-    int id, const char *mgmt, const char *var, const char *val, bool quote)
-{
-	char *str;
-	static bool warned = false;
-
-	if (!dhcpcd_wpa_set_network(con, i, id, "key_mgmt", mgmt))
-		return false;
-	if (quote)
-		str = g_strconcat("\"", val, "\"", NULL);
-	else
-		str = NULL;
-	if (!dhcpcd_wpa_set_network(con, i, id, var, quote ? str : val)) {
-		g_warning("libdhcpcd: %s", dhcpcd_error(con));
-		dhcpcd_error_clear(con);
-		g_free(str);
-		wpa_dialog(_("Error setting password"),
-		    _("Failed to set password, probably too short."));
-		return false;
-	}
-	g_free(str);
-	if (!dhcpcd_wpa_command(con, i, "EnableNetwork", id))
-		return false;
-	if (!dhcpcd_wpa_command(con, i, "SaveConfig", -1)) {
-		g_warning("libdhcpcd: %s", dhcpcd_error(con));
-		dhcpcd_error_clear(con);
-		if (!warned) {
-			warned = true;
-			wpa_dialog(_("Error saving configuration"),
-			    _("Failed to save wpa_supplicant configuration.\n\nYou should add update_config=1 to /etc/wpa_supplicant.conf.\nThis warning will not appear again until program restarted."));
-		}
-		return false;
-	}
-/*
-  if (!dbus_g_proxy_call(dbus, "Disconnect", &error,
-  G_TYPE_STRING, ifname,
-  G_TYPE_INVALID,
-  G_TYPE_INVALID))
-  {
-  g_warning("Disconnect: %s", error->message);
-  g_error_free(error);
-  }
-*/
-	if (!dhcpcd_wpa_command(con, i, "Reassociate", -1))
-		return false;
-	return true;
-}
-
 static void
 onEnter(_unused GtkWidget *widget, gpointer *data)
 {
@@ -94,14 +47,19 @@ onEnter(_unused GtkWidget *widget, gpointer *data)
 }
 
 bool
-wpa_configure(DHCPCD_CONNECTION *con, DHCPCD_IF *i, DHCPCD_WI_SCAN *s)
+wpa_configure(DHCPCD_WPA *wpa, DHCPCD_WI_SCAN *scan)
 {
+	DHCPCD_WI_SCAN s;
 	GtkWidget *dialog, *label, *psk, *vbox, *hbox;
-	const char *var, *mgt;
-	int result, id;
+	const char *var, *errt;
+	int result;
 	bool retval;
 
-	dialog = gtk_dialog_new_with_buttons(s->ssid,
+	/* Take a copy of scan incase it's destroyed by a scan update */
+	memcpy(&s, scan, sizeof(s));
+	s.next = NULL;
+
+	dialog = gtk_dialog_new_with_buttons(s.ssid,
 	    NULL,
 	    GTK_DIALOG_MODAL,
 	    GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
@@ -112,9 +70,9 @@ wpa_configure(DHCPCD_CONNECTION *con, DHCPCD_IF *i, DHCPCD_WI_SCAN *s)
 	    "network-wireless-encrypted");
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog),
 	    GTK_RESPONSE_ACCEPT);
-	vbox = GTK_DIALOG(dialog)->vbox;
+	vbox = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 
-	hbox = gtk_hbox_new(false, 2);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
 	label = gtk_label_new(_("Pre Shared Key:"));
 	gtk_box_pack_start(GTK_BOX(hbox), label, false, false, 0);
 	psk = gtk_entry_new();
@@ -127,24 +85,35 @@ wpa_configure(DHCPCD_CONNECTION *con, DHCPCD_IF *i, DHCPCD_WI_SCAN *s)
 	gtk_widget_show_all(dialog);
 again:
 	result = gtk_dialog_run(GTK_DIALOG(dialog));
-	
-	id = -1;
+
 	retval = false;
 	if (result == GTK_RESPONSE_ACCEPT) {
-		id = dhcpcd_wpa_find_network_new(con, i, s->ssid);
-		if (g_strcmp0(s->flags, "[WEP]") == 0) {
-			mgt = "NONE";
-			var = "wep_key0";
-		} else {
-			mgt = "WPA-PSK";
-			var = "psk";
+		var = gtk_entry_get_text(GTK_ENTRY(psk));
+		switch (dhcpcd_wpa_configure_psk(wpa, &s, var)) {
+		case DHCPCD_WPA_SUCCESS:
+			retval = true;
+			break;
+		case DHCPCD_WPA_ERR_SET:
+			errt = _("Failed to set key management.");
+			break;
+		case DHCPCD_WPA_ERR_SET_PSK:
+			errt = _("Failed to set password, probably too short.");
+			break;
+		case DHCPCD_WPA_ERR_ENABLE:
+			errt = _("Failed to enable the network.");
+			break;
+		case DHCPCD_WPA_ERR_ASSOC:
+			errt = _("Failed to start association.");
+			break;
+		case DHCPCD_WPA_ERR_WRITE:
+			errt =_("Failed to save wpa_supplicant configuration.\n\nYou should add update_config=1 to /etc/wpa_supplicant.conf.");
+			break;
+		default:
+			errt = strerror(errno);
+			break;
 		}
-		if (id != -1) {
-			retval = configure_network(con, i, id, mgt, var,
-			    gtk_entry_get_text(GTK_ENTRY(psk)), true);
-		}
-		if (!retval && dhcpcd_error(con)) {
-			wpa_dialog(_("Error"), dhcpcd_error(con));
+		if (!retval) {
+			wpa_dialog(_("Error enabling network"), errt);
 			goto again;
 		}
 	}

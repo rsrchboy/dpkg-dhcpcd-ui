@@ -1,14 +1,13 @@
 LIB=		dhcpcd
 SHLIB_MAJOR=	1
-SRCS=		main.c config.c dispatch.c misc.c wpa.c
-INCS=		libdhcpcd.h
+SRCS=		dhcpcd.c config.c wpa.c
+INCS=		dhcpcd.h
 
 TOPDIR=		../..
-include ${TOPDIR}/config.mk
+include ${TOPDIR}/iconfig.mk
 
-CPPFLAGS+=	-I${TOPDIR} ${DBUS_CFLAGS}
-CFLAGS+=	${DBUS_CFLAGS}
-LDADD+=		${DBUS_LIBS}
+CPPFLAGS+=	-I${TOPDIR}
+LDADD+=		${LIB_INTL}
 
 # Don't install
 LIBINSTALL=	${LIB_DHCPCD_INSTALL}

@@ -1,0 +1,11 @@
+#!/bin/sh
+
+while true; do
+	i=100
+	while [ $i -gt 1 ]; do
+		i=$((i - 1))
+		./dhcpcd-online
+	done
+	echo "SMALL SLEEP @ $(date)"
+	sleep 2
+done

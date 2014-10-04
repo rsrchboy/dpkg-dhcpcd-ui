@@ -1,7 +1,5 @@
 # rules to build a library
 
-include ${TOPDIR}/config.mk
-
 SHLIB=			lib${LIB}.so.${SHLIB_MAJOR}
 SHLIB_LINK=		lib${LIB}.so
 LIBNAME=		lib${LIB}.a
@@ -47,6 +45,8 @@ _libinstall:	all
 	for x in ${INCS}; do ${INSTALL} -m ${INCMODE} $$x ${DESTDIR}${INCDIR}; done
 
 install: ${LIBINSTALL}
+
+proginstall: install
 
 clean:
 	rm -f ${OBJS} ${SOBJS} ${LIBS} ${SHLIB_LINK} ${CLEANFILES}
